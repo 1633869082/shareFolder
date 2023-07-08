@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <!-- https://developer.mozilla.org/zh-CN/docs/Web/HTTP/CSP -->
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'"> -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="style-src 'unsafe-inline' 'self';script-src 'self';"
+    />
+    <title>共享文件夹</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+      }
+      html {
+        height: 100%;
+      }
+      body {
+        height: 100%;
+      }
+      #loginPage{
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #loginPage > #loginBox{
+        max-width: 400px;
+        padding:20px;
+        background-image: linear-gradient(#f0f5a8, #a4e697);
+        box-shadow: 3px 3px 3px rgb(129, 129, 129);
+        border-radius: 10px;
+      }
+      #loginPage > #loginBox > .title{
+          text-align: center;
+          font-size: 18px;
+          font-weight: bold;
+      }
+      #loginPage > #loginBox > div + div{
+        margin-top: 8px;
+      }
+      #loginPage > #loginBox > div > span{
+        display: inline-block;
+        width: 80px;
+        text-align: center;
+      }
+      #loginPage > #loginBox > div > .inputBox{
+        display: inline-block;
+        padding: 5px;
+        border:1px solid rgb(199, 197, 197);
+        border-radius: 3px;
+      }
+      
+      #loginPage > #loginBox > div > .inputBox > input{
+        outline: none;
+        border: none;
+        background-color: transparent;
+      }
+      #loginPage > #loginBox > .buttonBox{
+           display: flex;
+           align-items: center;
+           justify-content: center;
+      }
+      #loginPage > #loginBox > .buttonBox > .sureButton{
+        margin-top: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 70px;
+        height: 35px;
+        border-radius: 2px;
+        background-color: rgb(43, 173, 3);
+        color:#fff
+      }
+      #loginPage > #loginBox > .buttonBox > .sureButton:hover{
+        background-color: rgb(54, 196, 11);
+        cursor: pointer;
+      }
+      #filePage{
+        display: none;
+      }
+      #navigation {
+        background-color: rgba(28, 28, 230, 0.6);
+        width: 100%;
+        height: 40px;
+        position: fixed;
+        top: 0;
+        display: flex;
+        align-items: center;
+      }
+      #downloadButton {
+        height: 100%;
+        width: 40px;
+        background-image: url(./public/img/file_download.png);
+        background-size: 70%;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+      #downloadButton:hover {
+        cursor: pointer;
+        background-color: rgb(76, 76, 172);
+      }
+      #uploadButton {
+        height: 100%;
+        width: 40px;
+        background-image: url(./public/img/file_upload.png);
+        background-size: 70%;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-repeat: no-repeat;
+      }
+      #uploadButton:hover {
+        cursor: pointer;
+        background-color: rgb(76, 76, 172);
+      }
+      #buckAdd{
+        height: 100%;
+        width: 40px;
+        background-image: url(./public/img/folder-add.png);
+        background-size: 70%;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-repeat: no-repeat;
+        /* display: none; */
+      }
+      #buckAdd:hover{
+        cursor: pointer;
+        background-color: rgb(76, 76, 172);
+      }
+      #backButton {
+        height: 100%;
+        width: 40px;
+        /* background-color: purple; */
+        /* position: absolute;
+            right: 0; */
+        background-image: url(./public/img/backArrow.png);
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 50%;
+        background-repeat: no-repeat;
+        padding: 0 10px;
+      }
+      #backButton:hover {
+        cursor: pointer;
+        background-color: rgb(76, 76, 172);
+      }
+      #filePath {
+        /* position: absolute;
+            right: 60px; */
+        /* height: 60%; */
+        width: 400px;
+        margin-left: 10px;
+        /* line-height: 40px; */
+        color: black;
+        font-size: 13px;
+        padding: 3px 0 3px 8px;
+        background-color: #fff;
+        display: none;
+      }
+      .downloadList {
+        position: fixed;
+        top: 50px;
+        right: 10px;
+        width: 380px;
+        height: 400px;
+        border-radius: 6px;
+        background-color: rgb(224, 245, 245);
+        box-shadow: 3px 3px 3px rgb(129, 129, 129);
+        overflow: scroll;
+      }
+      #uploadList.downloadList{
+        background-color: rgb(240, 211, 240);
+      }
+      .downloadList > .downloadListTitle {
+        padding: 5px 0;
+        text-align: center;
+        font-weight: bold;
+        color: rgb(236, 150, 52);
+      }
+      .downloadList > .closeButton {
+        width: 25px;
+        height: 25px;
+        position: absolute;
+        top: 0;
+        right: 0;
+        background-image: url(./public/img/Cartoon-Closed.png);
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+        background-repeat: no-repeat;
+      }
+      .downloadList > .closeButton:hover {
+        background-color: rgb(238, 221, 189);
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      .downloadList > #downloadFileList {
+        list-style-type: none;
+      }
+      .downloadList > #downloadFileList > div > li {
+        padding: 8px 5px;
+        font-size: 13px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+
+        background-color: rgb(248, 178, 49);
+      }
+      .downloadList > #downloadFileList > div > li + li {
+        border-top: 2px dotted #fff;
+      }
+      .downloadList > #downloadFileList > div > li > .downloadListTitle {
+        width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .downloadList > #downloadFileList > div > li > .downloadProgressStrip {
+        height: 12px;
+        width: 180px;
+        background-color: #fff;
+        border-radius: 6px;
+      }
+
+      .downloadList
+        > #downloadFileList
+        > div
+        > li
+        > .downloadProgressStrip
+        > .completeStrip {
+        height: 100%;
+        width: 0%;
+        background-color: rgb(4, 173, 4);
+        border-radius: 6px;
+      }
+      .downloadList > #downloadFileList > div > li > .completeRate {
+        width: 50px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .downloadList > #downloadFileList > div > li > .downloadListIconBox {
+        width: 70px;
+        display: flex;
+        align-items: center;
+        justify-content: space-around;
+      }
+      .downloadList
+        > #downloadFileList
+        > div
+        > li
+        > .downloadListIconBox
+        > .stopButton {
+        width: 20px;
+        height: 20px;
+        background-image: url(./public/img/Pause.png);
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+        background-repeat: no-repeat;
+      }
+      .downloadList
+        > #downloadFileList
+        > div
+        > li
+        > .downloadListIconBox
+        > .stopButton:hover {
+        background-color: rgb(240, 214, 166);
+        cursor: pointer;
+      }
+      .downloadList
+        > #downloadFileList
+        > div
+        > li
+        > .downloadListIconBox
+        > .startButton {
+        width: 20px;
+        height: 20px;
+        background-image: url(./public/img/Play.png);
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+        background-repeat: no-repeat;
+        display: none;
+      }
+      .downloadList
+        > #downloadFileList
+        > div
+        > li
+        > .downloadListIconBox
+        > .startButton:hover {
+        background-color: rgb(240, 214, 166);
+        cursor: pointer;
+      }
+      .downloadList
+        > #downloadFileList
+        > div
+        > li
+        > .downloadListIconBox
+        > .deleteButton {
+        width: 20px;
+        height: 20px;
+        background-image: url(./public/img/deleteIcon.png);
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 80%;
+        background-repeat: no-repeat;
+      }
+      .downloadList
+        > #downloadFileList
+        > div
+        > li
+        > .downloadListIconBox
+        > .deleteButton:hover {
+        background-color: rgb(240, 214, 166);
+        cursor: pointer;
+      }
+      .downloadList
+        > #downloadFileList
+        > div
+        > li
+        > .downloadListIconBox
+        > .openFolderButton {
+        width: 20px;
+        height: 20px;
+        background-image: url(./public/img/folder.png);
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 100%;
+        background-repeat: no-repeat;
+        display: none;
+      }
+      .downloadList
+        > #downloadFileList
+        > div
+        > li
+        > .downloadListIconBox
+        > .openFolderButton:hover {
+        background-color: rgb(240, 214, 166);
+        cursor: pointer;
+      }
+      #ul {
+        /* margin-top: 50px; */
+      }
+      #ul::before {
+        content: "";
+        display: block;
+        height: 50px;
+      }
+      #ul > div > li {
+        display: inline-block;
+        margin-left: 15px;
+        text-align: center;
+        font-weight: bold;
+        font-size: 12px;
+        border: 0.1px solid white;
+        border-radius: 8px;
+        width: 100px;
+        height: 115px;
+        padding-left: 10px;
+        padding-right: 10px;
+        box-sizing: border-box;
+        margin-bottom: 10px;
+      }
+      #ul > div > li:hover {
+        background-color: rgba(28, 28, 230, 0.1);
+        border: 0.1px solid rgba(28, 28, 230, 0.2);
+        cursor: pointer;
+        color: rgba(28, 28, 230, 0.5);
+      }
+      #ul > div > li > span {
+        height: 34px;
+        display: block;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+      }
+      #ul > div > li > div {
+        height: 80px;
+        background-image: url(./public/img/folder.png);
+        background-position: center;
+        background-size: 100%;
+        background-repeat: no-repeat;
+      }
+      #ul > div > li > .pdf {
+        background-image: url(./public/img/Pdf.png);
+      }
+      #ul > div > li > .doc,
+      #ul > div > li > .docx {
+        background-image: url(./public/img/doc.png);
+      }
+      #ul > div > li > .png {
+        background-image: url(./public/img/Png.png);
+      }
+      #ul > div > li > .jpg,
+      #ul > div > li > .jpeg {
+        background-image: url(./public/img/Jpg.png);
+      }
+      #ul > div > li > .txt {
+        background-image: url(./public/img/Document.png);
+      }
+      #ul > div > li > .xls,
+      #ul > div > li > .xlsx {
+        background-image: url(./public/img/DS.png);
+      }
+      #ul > div > li > .zip {
+        background-image: url(./public/img/zip.png);
+      }
+      #ul > div > li > .unknown {
+        background-image: url(./public/img/Unknown.png);
+      }
+      #ul > div > li > .epub {
+        background-image: url(./public/img/epub.png);
+      }
+      #ul > div > li > .html {
+        background-image: url(./public/img/html.png);
+      }
+      #ul > div > li > .rar {
+        background-image: url(./public/img/rar.png);
+      }
+      #ul > div > li > .iso,
+      #ul > div > li > .ISO {
+        background-image: url(./public/img/iso.png);
+      }
+      #ul > div > li > .md {
+        background-image: url(./public/img/markdownIcon.png);
+      }
+      #ul > div > li > .csv {
+        background-image: url(./public/img/csv.png);
+      }
+      #ul > div > li > .json {
+        background-image: url(./public/img/json.png);
+      }
+      #ul > div > li > .mobi {
+        background-image: url(./public/img/mobi.png);
+      }
+      #ul > div > li > .exe {
+        background-image: url(./public/img/exe.png);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="loginPage">
+        <div id="loginBox">
+          <div class="title">登录</div>
+          <div><span>服务IP：</span><div class="inputBox"><input type="text" id="serverIP"></div></div>
+          <div><span>服务端口：</span><div class="inputBox"><input type="text" id="serverPort"></div></div>
+          <div><span>账号：</span><div class="inputBox"><input type="text" id="userName"></div></div>
+          <div><span>密码：</span><div class="inputBox"><input type="password" name="" id="password"></div></div>
+          <div class="buttonBox"><div class="sureButton">确定</div></div>
+        </div>  
+    </div>
+    <div id="filePage">
+      <div id="navigation">
+        <div id="backButton"></div>
+        <div id="downloadButton" title="下载列表"></div>
+        <div id="uploadButton" title="上传列表"></div>
+        <div id="buckAdd" title="创建文件夹"></div>
+        <div id="filePath"></div>
+      </div>
+      <ul id="ul"></ul>
+      <div id="downloadList" class="downloadList">
+        <div class="downloadListTitle">下载列表</div>
+        <div class="closeButton"></div>
+        <ul id="downloadFileList">
+          <div>
+            <!-- <li>
+                      <div class="downloadListTitle" title="...文件fsdfsdfsdfsdf">...文件fsdfsdfsdfsdf</div>
+                      <div class="downloadProgressStrip">
+                          <div class="completeStrip"></div>
+                      </div>
+                      <div class="completeRate">0%</div>
+                      <div class="downloadListIconBox">
+                          <div class="stopButton" title="暂停"></div>
+                          <div class="startButton" title="开始"></div>
+                          <div class="deleteButton" title="删除"></div>
+                          <div class="openFolderButton" title="打开文件夹"></div>
+                      </div>
+                  </li> -->
+          </div>
+        </ul>
+      </div>
+      <div id="uploadList" class="downloadList">
+        <div class="downloadListTitle">上传列表</div>
+        <div class="closeButton"></div>
+        <ul id="downloadFileList">
+          <div>
+            <!-- <li>
+                      <div class="downloadListTitle" title="...文件fsdfsdfsdfsdf">...文件fsdfsdfsdfsdf</div>
+                      <div class="downloadProgressStrip">
+                          <div class="completeStrip"></div>
+                      </div>
+                      <div class="completeRate">0%</div>
+                      <div class="downloadListIconBox">
+                          <div class="stopButton" title="暂停"></div>
+                          <div class="startButton" title="开始"></div>
+                          <div class="deleteButton" title="删除"></div>
+                          <div class="openFolderButton" title="打开文件夹"></div>
+                      </div>
+              </li> -->
+          </div>
+        </ul>
+      </div>
+    </div>
+  </body>
+  <script src="./render/index.js"></script>
+</html>
